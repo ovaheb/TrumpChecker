@@ -14,7 +14,7 @@ from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 
 load_dotenv()
 
-st.title("Chatbot")
+st.title("TrumpChecker")
 
 # initialize pinecone database
 pc = Pinecone(api_key=os.environ.get("PINECONE_API_KEY"))
@@ -42,6 +42,19 @@ for message in st.session_state.messages:
         with st.chat_message("assistant"):
             st.markdown(message.content)
 
+
+# initialize the llm
+llm = ChatOpenAI(
+    model="gpt-4o",
+    temperature=1
+)
+
+# creating and invoking the retriever
+retriever = vector_store.as_retriever(
+    search_type="similarity_score_threshold",
+    search_kwargs={"k": 3, "score_threshold": 0.7},
+)
+
 # create the bar where we can type messages
 prompt = st.chat_input("How are you?")
 
@@ -54,20 +67,8 @@ if prompt:
 
         st.session_state.messages.append(HumanMessage(prompt))
 
-    # initialize the llm
-    llm = ChatOpenAI(
-        model="gpt-4o",
-        temperature=1
-    )
-
-    # creating and invoking the retriever
-    retriever = vector_store.as_retriever(
-        search_type="similarity_score_threshold",
-        search_kwargs={"k": 3, "score_threshold": 0.5},
-    )
-
     docs = retriever.invoke(prompt)
-    docs_text = "".join(d.page_content for d in docs)
+    docs_text = "\n\n".join(d.page_content for d in docs if d.page_content.strip())
 
     # creating the system prompt
     system_prompt = """You are an assistant for question-answering tasks. 
@@ -95,3 +96,16 @@ if prompt:
 
         st.session_state.messages.append(AIMessage(result))
 
+with st.sidebar:
+    st.header("🧠 About TrumpChecker")
+    st.markdown("""
+    **TrumpChecker** is a chatbot that evaluates the **legality** and **credibility** of statements by Donald Trump, based on the **U.S. Constitution** and relevant documents.
+
+    Ask any question about Trump's claims, and it will try to verify them using contextual knowledge.
+
+    _Powered by Pinecone + OpenAI_
+    """)
+    
+    if st.button("🔄 Reset Chat"):
+        st.session_state.messages = [SystemMessage("You are an assistant for question-answering tasks.")]
+        st.experimental_rerun()

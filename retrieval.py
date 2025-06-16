@@ -28,9 +28,9 @@ vector_store = PineconeVectorStore(index=index, embedding=embeddings)
 # retrieval
 retriever = vector_store.as_retriever(
     search_type="similarity_score_threshold",
-    search_kwargs={"k": 5, "score_threshold": 0.5},
+    search_kwargs={"k": 2, "score_threshold": 0.6},
 )
-results = retriever.invoke("what is retrieval augmented generation?")
+results = retriever.invoke("what is the most important section of us constitution?")
 
 # show results
 print("RESULTS:")
